@@ -123,6 +123,23 @@ async function getCacheEntryS3(
   const primaryKey = keys[0]
 
   const s3client = new S3Client(s3Options)
+  s3client.middlewareStack.add(
+    (next, context) => async (args) => {
+      core.debug(`AWS SDK context: ${context.clientName} - ${context.commandName}`);
+      // console.log("AWS SDK request input", args.input);
+      core.debug(`AWS SDK raw request ${JSON.stringify(args.request)}`);
+      const result = await next(args);
+      core.debug(`AWS SDK raw response ${JSON.stringify(result.response)}`);
+      core.debug(`AWS SDK response metadata: ${JSON.stringify(result.output.$metadata)}`);
+      // console.log("AWS SDK request output:", result.output);
+      return result;
+    },
+    {
+      name: "LogMe",
+      step: "build",
+      override: true,
+    }
+  );
 
   let contents: _content[] = new Array()
   let s3ContinuationToken: string | undefined = undefined
